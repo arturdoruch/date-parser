@@ -1,0 +1,22 @@
+{
+    "name": "arturdoruch/date-parser",
+    "description": "Date time parser",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Artur Doruch",
+            "email": "arturdoruch@interia.pl"
+        }
+    ],
+    "require": {
+        "php": ">=7.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "ArturDoruch\\DateParser\\" : ""
+        },
+        "exclude-from-classmap": [
+            "/Tests/"
+        ]
+    }
+}
