@@ -12,30 +12,29 @@ class DateParser
      */
     const MAX_TIMESTAMP = 4102444800; // 2100-01-01 00:00:00
 
-    /**
-     * @var string
-     */
-    private static $processingDate;
+    private static $dateClass;
 
     /**
      * Parses a formatted date and time or a timestamp.
      *
      * @param string|int $date A formatted date and time or a timestamp.
+     * @param bool $immutable Whether to return the DateTimeImmutable object.
      *
-     * @return \DateTime
-     * @throws \InvalidArgumentException When given date is invalid.
+     * @return \DateTimeInterface
+     * @throws \InvalidArgumentException When parsing date is invalid.
      */
-    public static function parse($date): \DateTime
+    public static function parse($date, bool $immutable = false): \DateTimeInterface
     {
-        if ($date instanceof \DateTime) {
+        if ($date instanceof \DateTimeInterface) {
             return $date;
         }
 
-        self::$processingDate = $date;
+        $processingDate = $date;
+        self::$dateClass = $class = $immutable ? \DateTimeImmutable::class : \DateTime::class;
 
         if (is_int($date)) {
             if ($date > 0 && $date < self::MAX_TIMESTAMP) {
-                return new \DateTime('@'.$date);
+                return new $class('@'.$date);
             }
 
             throw new \InvalidArgumentException(sprintf('Invalid date timestamp "%s".', $date));
@@ -44,32 +43,32 @@ class DateParser
         $parts = date_parse($date = self::normalizeMonth($date));
 
         if (!$parts['error_count'] && !$parts['warning_count'] && $parts['day']) {
-            return new \DateTime(sprintf('%d-%d-%d %d:%d:%d', $parts['day'], $parts['month'], $parts['year'], $parts['hour'], $parts['minute'], $parts['second']));
+            return new $class(sprintf('%d-%d-%d %d:%d:%d', $parts['day'], $parts['month'], $parts['year'], $parts['hour'], $parts['minute'], $parts['second']));
         }
 
         try {
             if (preg_match('/^(?!0.+)(\d{4}).(?!00)([01]\d).(?!00)([0123]\d)(,? \d{2}(:\d{2}){1,2})?$/', $date, $matches)) {
                 // Format: YYYY.MM.DD[, H:i[:s]]
-                return self::createDate($matches[3], $matches[2], $matches[1] , $matches[4] ?? '');
+                return self::createDate($matches[3], $matches[2], $matches[1], $matches[4] ?? '');
             } elseif (preg_match('/^(?!00)([0123]\d).(?!00)([01]\d).(\d{2})$/', $date, $matches) ) {
                 // Format: DD.MM.YY
                 // WARNING: This parsing make leads to incorrect result.
                 return self::createDate($matches[1], $matches[2], '20'.$matches[3]);
-            } elseif (preg_match('/^([-+]?\d+ ?)?[a-z]{3,}( [a-z\d:+ ]+)?$/i', self::$processingDate)) {
+            } elseif (preg_match('/^([-+]?\d+ ?)?[a-z]{3,}( [a-z\d:+ ]+)?$/i', $processingDate)) {
                 // Relative datetime format https://www.php.net/manual/en/datetime.formats.relative.php
-                return new \DateTime(self::$processingDate);
+                return new $class($processingDate);
             }
         } catch (\Exception $e) {
         }
 
-        throw new \InvalidArgumentException(sprintf('Invalid date "%s".', self::$processingDate));
+        throw new \InvalidArgumentException(sprintf('Invalid date "%s".', $processingDate));
     }
 
 
-    private static function createDate($day, $month, $year, $time = ''): \DateTime
+    private static function createDate($day, $month, $year, $time = ''): \DateTimeInterface
     {
         if (@checkdate($month, $day, $year)) {
-            return new \DateTime($day . '-' . $month . '-' . $year . ' ' . $time);
+            return new self::$dateClass($day . '-' . $month . '-' . $year . ' ' . $time);
         }
 
         throw new \InvalidArgumentException('Invalid date arguments.');
