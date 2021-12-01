@@ -14,9 +14,6 @@
     "autoload": {
         "psr-4": {
             "ArturDoruch\\DateParser\\" : ""
-        },
-        "exclude-from-classmap": [
-            "/Tests/"
-        ]
+        }
     }
 }
